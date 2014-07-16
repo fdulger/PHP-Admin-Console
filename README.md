@@ -1,4 +1,4 @@
 
 A sample PHP project for an extensible admin console.
 
-fdulger.blogspot.com.tr
+http://fdulger.blogspot.com.tr
