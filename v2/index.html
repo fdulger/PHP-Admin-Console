@@ -1,0 +1,89 @@
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+    <script src="/v2/forms.js"></script>
+    <script>
+        function init() {
+            document.getElementById("formSelection").innerHTML = generateFormSelection(forms)
+            var firstForm = Object.keys(forms)[0]
+            selectForm(firstForm)
+        }
+
+        function selectForm(selected) {
+            var selectFormButtons = document.getElementsByClassName("selectFormButton")
+            Array.prototype.forEach.call(selectFormButtons, function(button) {
+                button.removeAttribute("disabled")
+            })
+            document.getElementById("selectFormButton"+selected).setAttribute("disabled", "disabled")
+            document.getElementById("insertionForm").innerHTML = generateInsertionForm(forms[selected])
+
+            fetch('/v2/crud.php?form='+selected)
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data)
+                document.getElementById("selectionForm").innerHTML = generateList(data)
+            })
+            .catch((error) => console.log(error))
+        }
+    </script>
+</head>
+<body onload="init()">
+    <center>
+        <div id="formSelection"></div><br/>
+        <table border="1">
+            <tr>
+                <th>Add</th><th>Select</th><th>Edit</th>
+            </tr>
+            <tr>
+                <td>
+                    <div id="insertionForm"/>
+                </td>
+                <td>
+                    <div id="selectionForm">There is no saved item.</div>
+                </td>
+                <td>
+                    <div id="tableEdit">Select an item from the list to edit.</div>
+                </td>
+            </tr>
+        </table>
+    </center>
+</body>
+
+<script id="formSelectionTemplate" type="x-tmpl-mustache">
+    {{#each this}}
+        <button class="selectFormButton" id="selectFormButton{{@key}}" onclick=selectForm("{{@key}}")>{{@key}}</button>
+    {{/each}}
+</script>
+
+<script id="insertionFormTemplate" type="x-tmpl-mustache">
+    <table>
+        {{#fields}}
+            <tr>
+                <td>{{name}}</td>
+                <td><input type="{{name}}"/></td>
+            </tr>
+        {{/fields}}
+        <tr>
+            <td></td>
+            <td>
+                <button style="width:100%">ADD</button>
+            </td>
+        </tr>
+    </table>
+</script>
+
+<script id="listTemplate" type="x-tmpl-mustache">
+    <input type="text" placeholder="Type to filter"/>
+    <table>
+        {{#items}}
+            <tr>
+                <td>{{name}}</td>
+            </tr>
+        {{/items}}
+    </table>
+</script>
+
+<script>
+    var generateInsertionForm = Handlebars.compile(document.getElementById('insertionFormTemplate').innerHTML)
+    var generateFormSelection = Handlebars.compile(document.getElementById('formSelectionTemplate').innerHTML)
+    var generateList = Handlebars.compile(document.getElementById('listTemplate').innerHTML)
+</script>
