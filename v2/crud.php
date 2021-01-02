@@ -73,4 +73,35 @@ else if ($_SERVER["REQUEST_METHOD"] == "PUT") {
     }
 }
 
+else if ($_SERVER["REQUEST_METHOD"] == "DELETE") {
+    $request = json_decode(file_get_contents('php://input'));
+
+    $strJsonFileContents = file_get_contents("data.json");
+    $data = json_decode($strJsonFileContents, true);
+
+    if(!isset($data[$request->{"form"}])) {
+        echo "{}";
+    } else {
+
+        $items = $data[$request->{"form"}];
+        function delete($item) {
+            global $request;
+            $id = $request->{"deletedElement"}->{"ID"};
+            return $item["uuid"] !== $id;
+        }
+
+        $updated = array_filter($items, 'delete');
+
+        $data[$request->{"form"}] = $updated;
+
+        $res = json_encode($data);
+
+        $storage = fopen("data.json", "w") or die("Unable to open file!");
+        fwrite($storage, $res);
+        fclose($storage);
+
+        echo $res;
+    }
+}
+
 ?>

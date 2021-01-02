@@ -26,6 +26,10 @@
             $("#selectionForm").html("There is no saved item.")
             $("#tableEdit").html("Select an item from the list to edit.")
 
+            refresh(selected)
+        }
+
+        function refresh(selected) {
             fetch('crud.php?form='+selected)
                 .then(res => res.json())
                 .then(data => {
@@ -70,6 +74,8 @@
                 })
                 .then(res => res.json())
                 .then(data => console.log(data))
+                .then(data => refresh(formName))
+                .then(data => $("#insertionForm").html(generateInsertionForm(forms[formName])))
         }
 
         function updateElement(formName) {
@@ -79,7 +85,6 @@
                 updatedElement[$(obj).data("name")] = obj.value
             })
             request["updatedElement"] = updatedElement
-            console.log(request)
             fetch('crud.php?form='+formName, {
                   method: 'PUT',
                   headers: {
@@ -89,6 +94,27 @@
                 })
                 .then(res => res.json())
                 .then(data => console.log(data))
+                .then(data => refresh(formName))
+        }
+
+        function deleteElement(formName) {
+            let request = {"form":formName}
+            let deletedElement = {}
+            $(".editInputField").each(function(i, obj) {
+                deletedElement[$(obj).data("name")] = obj.value
+            })
+            request["deletedElement"] = deletedElement
+            fetch('crud.php?form='+formName, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                  },
+                  body: JSON.stringify(request)
+                })
+                .then(res => res.json())
+                .then(data => console.log(data))
+                .then(data => refresh(formName))
+                .then(data => $("#tableEdit").html("Select an item from the list to edit."))
         }
     </script>
 </head>
@@ -156,6 +182,12 @@
             <td></td>
             <td>
                 <button style="width:100%" onclick=updateElement("{{form}}")>SAVE</button>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <button style="width:100%;color:red;" onclick=deleteElement("{{form}}")>DELETE</button>
             </td>
         </tr>
     </table>
