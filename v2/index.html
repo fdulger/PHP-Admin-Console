@@ -1,28 +1,74 @@
 <head>
     <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
-    <script src="/v2/forms.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="index.css">
     <script>
+        var forms = {}
         function init() {
-            document.getElementById("formSelection").innerHTML = generateFormSelection(forms)
-            var firstForm = Object.keys(forms)[0]
-            selectForm(firstForm)
+            fetch('forms.json')
+                .then(data => data.json())
+                .then(data => {
+                    forms = data
+                    $("#formSelection").html(generateFormSelection(forms))
+                    var firstForm = Object.keys(forms)[0]
+                    toggleForm(firstForm)
+                })
+                .catch(error => console.log(error))
         }
 
-        function selectForm(selected) {
+        function toggleForm(selected) {
             var selectFormButtons = document.getElementsByClassName("selectFormButton")
             Array.prototype.forEach.call(selectFormButtons, function(button) {
                 button.removeAttribute("disabled")
             })
-            document.getElementById("selectFormButton"+selected).setAttribute("disabled", "disabled")
-            document.getElementById("insertionForm").innerHTML = generateInsertionForm(forms[selected])
+            $("#selectFormButton"+selected).attr("disabled", "disabled")
+            $("#insertionForm").html(generateInsertionForm(forms[selected]))
+            $("#selectionForm").html("There is no saved item.")
+            $("#tableEdit").html("Select an item from the list to edit.")
 
-            fetch('/v2/crud.php?form='+selected)
-            .then((res) => res.json())
-            .then((data) => {
-                console.log(data)
-                document.getElementById("selectionForm").innerHTML = generateList(data)
+            fetch('crud.php?form='+selected)
+                .then(res => res.json())
+                .then(data => {
+                    var handles = data.map(d => Object({ "form":selected, "handle": d[forms[selected]["handle"]], "data": JSON.stringify(d)}))
+                    $("#selectionForm").html(generateList(handles))
+                })
+                .catch(error => console.log(error))
+        }
+
+        function selectElement(formName, data) {
+            var form = forms[formName]
+            var values = JSON.parse(data)
+            var mapped = Object({
+                "fields": form.fields.map(field =>
+                    Object({
+                        "field": field,
+                        "value": values[field["name"]]
+                    })
+                )
             })
-            .catch((error) => console.log(error))
+            $("#tableEdit").html(generateEditForm(mapped))
+        }
+
+        function insertElement(formName) {
+            let request = {"form":formName}
+            let newElement = {}
+            $(".inputField").each(function(i, obj) {
+                newElement[$(obj).data("name")] = obj.value
+            })
+            request["newElement"] = newElement
+            fetch('crud.php?form='+formName, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                  },
+                  body: JSON.stringify(request)
+                })
+                .then(res => res.json())
+                .then(data => console.log(data))
+        }
+
+        function updateElement(formName) {
+
         }
     </script>
 </head>
@@ -50,7 +96,7 @@
 
 <script id="formSelectionTemplate" type="x-tmpl-mustache">
     {{#each this}}
-        <button class="selectFormButton" id="selectFormButton{{@key}}" onclick=selectForm("{{@key}}")>{{@key}}</button>
+        <button class="selectFormButton" id="selectFormButton{{@key}}" onclick=toggleForm("{{@key}}")>{{@key}}</button>
     {{/each}}
 </script>
 
@@ -59,13 +105,13 @@
         {{#fields}}
             <tr>
                 <td>{{name}}</td>
-                <td><input type="{{name}}"/></td>
+                <td><input class="inputField" data-name="{{name}}" type="{{type}}"/></td>
             </tr>
         {{/fields}}
         <tr>
             <td></td>
             <td>
-                <button style="width:100%">ADD</button>
+                <button style="width:100%" onclick=insertElement("{{name}}")>ADD</button>
             </td>
         </tr>
     </table>
@@ -73,17 +119,36 @@
 
 <script id="listTemplate" type="x-tmpl-mustache">
     <input type="text" placeholder="Type to filter"/>
+    {{#each this}}
+        <div class="listItem" onclick=selectElement('{{form}}','{{data}}')>{{handle}}</div>
+    {{/each}}
+</script>
+
+<script id="editTemplate" type="x-tmpl-mustache">
     <table>
-        {{#items}}
+        {{#fields}}
             <tr>
                 <td>{{name}}</td>
+                <td><input class="editInputField" data-name="{{name}}" type="{{type}}" value="{{value}}"/></td>
             </tr>
-        {{/items}}
+        {{/fields}}
+        <tr>
+            <td></td>
+            <td>
+                <button style="width:100%" onclick=updateElement("{{form}}")>SAVE</button>
+            </td>
+        </tr>
     </table>
 </script>
 
 <script>
-    var generateInsertionForm = Handlebars.compile(document.getElementById('insertionFormTemplate').innerHTML)
-    var generateFormSelection = Handlebars.compile(document.getElementById('formSelectionTemplate').innerHTML)
-    var generateList = Handlebars.compile(document.getElementById('listTemplate').innerHTML)
+    var generateInsertionForm = Handlebars.compile($('#insertionFormTemplate').html())
+    var generateFormSelection = Handlebars.compile($('#formSelectionTemplate').html())
+    var generateList = Handlebars.compile($('#listTemplate').html())
+    var generateEditForm = Handlebars.compile($('#editTemplate').html())
+
+    Handlebars.registerHelper("log", function(obj) {
+        console.log(JSON.stringify(obj))
+        return obj
+    });
 </script>
