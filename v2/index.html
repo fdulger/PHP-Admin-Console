@@ -46,6 +46,11 @@
                     })
                 )
             })
+            mapped["form"] = formName
+            mapped["fields"].push(Object({
+                "field": Object({"name":"ID","type":"text","disabled":"disabled"}),
+                "value": values["uuid"]
+            }))
             $("#tableEdit").html(generateEditForm(mapped))
         }
 
@@ -68,7 +73,22 @@
         }
 
         function updateElement(formName) {
-
+            let request = {"form":formName}
+            let updatedElement = {}
+            $(".editInputField").each(function(i, obj) {
+                updatedElement[$(obj).data("name")] = obj.value
+            })
+            request["updatedElement"] = updatedElement
+            console.log(request)
+            fetch('crud.php?form='+formName, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                  },
+                  body: JSON.stringify(request)
+                })
+                .then(res => res.json())
+                .then(data => console.log(data))
         }
     </script>
 </head>
@@ -128,8 +148,8 @@
     <table>
         {{#fields}}
             <tr>
-                <td>{{name}}</td>
-                <td><input class="editInputField" data-name="{{name}}" type="{{type}}" value="{{value}}"/></td>
+                <td>{{field.name}}</td>
+                <td><input class="editInputField" data-name="{{field.name}}" type="{{field.type}}" value="{{value}}" {{isDisabled field.disabled}}/></td>
             </tr>
         {{/fields}}
         <tr>
@@ -150,5 +170,9 @@
     Handlebars.registerHelper("log", function(obj) {
         console.log(JSON.stringify(obj))
         return obj
+    });
+
+    Handlebars.registerHelper("isDisabled", function(what) {
+        return typeof what !== 'undefined' ? "disabled" : ""
     });
 </script>
