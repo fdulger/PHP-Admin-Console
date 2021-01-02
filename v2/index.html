@@ -29,8 +29,8 @@
             refresh(selected)
         }
 
-        function refresh(selected) {
-            fetch('crud.php?form='+selected)
+        function refresh(selected, q = "") {
+            fetch('crud.php?form='+selected+'&q='+q)
                 .then(res => res.json())
                 .then(data => {
                     var handles = data.map(d => Object({ "form":selected, "handle": d[forms[selected]["handle"]], "data": JSON.stringify(d)}))
